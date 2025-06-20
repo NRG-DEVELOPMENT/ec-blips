@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EC-Blips</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <div class="container" v-if="showMenu">
+            <div class="header">
+                <h1>Blip Management</h1>
+                <button class="close-btn" @click="closeMenu">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            
+            <div class="tabs">
+                <button :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">Blip List</button>
+                <button :class="{ active: activeTab === 'create' }" @click="activeTab = 'create'">Create Blip</button>
+                <button :class="{ active: activeTab === 'nearest' }" @click="findNearestBlip">Edit Nearest</button>
+            </div>
+            
+            <div class="content">
+                <!-- Blip List Tab -->
+                <div class="tab-content" v-if="activeTab === 'list'">
+                    <div class="search-bar">
+                        <input type="text" v-model="searchQuery" placeholder="Search blips...">
+                    </div>
+                    
+                    <div class="blip-list">
+                        <div v-if="filteredBlips.length === 0" class="no-blips">
+                            No blips found.
+                        </div>
+                        <div v-for="blip in filteredBlips" :key="blip.id" class="blip-item">
+                            <div class="blip-info">
+                                <div class="blip-name">{{ blip.name }}</div>
+                                <div class="blip-details">
+                                    <span>Sprite: {{ blip.sprite }}</span>
+                                    <span>Color: {{ blip.color }}</span>
+                                    <span>Scale: {{ blip.scale }}</span>
+                                </div>
+                            </div>
+                            <div class="blip-actions">
+                                <button class="edit-btn" @click="editBlip(blip)">
+                                    <span class="material-icons">edit</span>
+                                </button>
+                                <button class="delete-btn" @click="confirmDelete(blip)">
+                                    <span class="material-icons">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Create Blip Tab -->
+                <div class="tab-content" v-if="activeTab === 'create'">
+                    <div class="form">
+                        <div class="form-group">
+                            <label for="blipName">Blip Name</label>
+                            <input type="text" id="blipName" v-model="newBlip.name" placeholder="Enter blip name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blipSprite">Sprite</label>
+                            <div class="select-wrapper">
+                                <select id="blipSprite" v-model="newBlip.sprite">
+                                    <option v-for="sprite in commonSprites" :key="sprite.id" :value="sprite.id">
+                                        {{ sprite.name }} ({{ sprite.id }})
+                                    </option>
+                                </select>
+                                <span class="material-icons">arrow_drop_down</span>
+                            </div>
+                            <div class="custom-input">
+                                <label for="customSprite">Custom Sprite ID (0-826):</label>
+                                <input type="number" id="customSprite" v-model="customSprite" min="0" max="826" @change="newBlip.sprite = parseInt(customSprite)">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blipColor">Color</label>
+                            <div class="select-wrapper">
+                                <select id="blipColor" v-model="newBlip.color">
+                                    <option v-for="color in commonColors" :key="color.id" :value="color.id">
+                                        {{ color.name }} ({{ color.id }})
+                                    </option>
+                                </select>
+                                <span class="material-icons">arrow_drop_down</span>
+                            </div>
+                            <div class="custom-input">
+                                <label for="customColor">Custom Color ID (0-85):</label>
+                                <input type="number" id="customColor" v-model="customColor" min="0" max="85" @change="newBlip.color = parseInt(customColor)">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="blipScale">Scale</label>
+                            <input type="range" id="blipScale" v-model="newBlip.scale" min="0.1" max="2.0" step="0.1">
+                            <span class="scale-value">{{ newBlip.scale }}</span>
+                        </div>
+                        
+                        <button class="create-btn" @click="createBlip">Create Blip</button>
+                    </div>
+                </div>
+                
+                <!-- Edit Blip Tab -->
+                <div class="tab-content" v-if="activeTab === 'edit'">
+                    <div class="form" v-if="editingBlip">
+                        <div class="form-group">
+                            <label for="editBlipName">Blip Name</label>
+                            <input type="text" id="editBlipName" v-model="editingBlip.name" placeholder="Enter blip name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editBlipSprite">Sprite</label>
+                            <div class="select-wrapper">
+                                <select id="editBlipSprite" v-model="editingBlip.sprite">
+                                    <option v-for="sprite in commonSprites" :key="sprite.id" :value="sprite.id">
+                                        {{ sprite.name }} ({{ sprite.id }})
+                                    </option>
+                                </select>
+                                <span class="material-icons">arrow_drop_down</span>
+                            </div>
+                            <div class="custom-input">
+                                <label for="editCustomSprite">Custom Sprite ID (0-826):</label>
+                                <input type="number" id="editCustomSprite" v-model="editCustomSprite" min="0" max="826" @change="editingBlip.sprite = parseInt(editCustomSprite)">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editBlipColor">Color</label>
+                            <div class="select-wrapper">
+                                <select id="editBlipColor" v-model="editingBlip.color">
+                                    <option v-for="color in commonColors" :key="color.id" :value="color.id">
+                                        {{ color.name }} ({{ color.id }})
+                                    </option>
+                                </select>
+                                <span class="material-icons">arrow_drop_down</span>
+                            </div>
+                            <div class="custom-input">
+                                <label for="editCustomColor">Custom Color ID (0-85):</label>
+                                <input type="number" id="editCustomColor" v-model="editCustomColor" min="0" max="85" @change="editingBlip.color = parseInt(editCustomColor)">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editBlipScale">Scale</label>
+                            <input type="range" id="editBlipScale" v-model="editingBlip.scale" min="0.1" max="2.0" step="0.1">
+                            <span class="scale-value">{{ editingBlip.scale }}</span>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="save-btn" @click="saveBlip">Save Changes</button>
+                            <button class="cancel-btn" @click="cancelEdit">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Delete Confirmation Modal -->
+        <div class="modal" v-if="showDeleteModal">
+            <div class="modal-content">
+                <h2>Confirm Delete</h2>
+                <p>Are you sure you want to delete the blip "{{ deleteBlip?.name }}"?</p>
+                <div class="modal-buttons">
+                    <button class="cancel-btn" @click="showDeleteModal = false">Cancel</button>
+                    <button class="delete-btn" @click="deleteBlipConfirmed">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.31/dist/vue.global.prod.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
