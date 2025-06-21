@@ -1,5 +1,23 @@
 const { createApp } = Vue;
 
+// Color mapping for preview
+const colorMap = {
+    0: "#FFFFFF", // White
+    1: "#FF0000", // Red
+    2: "#00FF00", // Green
+    3: "#0000FF", // Blue
+    4: "#FFFF00", // Yellow
+    5: "#00FFFF", // Light Blue
+    6: "#FF00FF", // Purple
+    7: "#FFC0CB", // Pink
+    8: "#FFA500", // Orange
+    39: "#FF6666", // Light Red
+    46: "#000080", // Dark Blue
+    52: "#006400", // Dark Green
+    76: "#4B0082", // Dark Purple
+    84: "#FFD700", // Gold
+};
+
 createApp({
     data() {
         return {
@@ -45,6 +63,15 @@ createApp({
     },
     
     methods: {
+        // Get color style for preview
+        getColorStyle(colorId) {
+            const color = colorMap[colorId] || `hsl(${(colorId * 20) % 360}, 70%, 50%)`;
+            return {
+                backgroundColor: color,
+                boxShadow: `0 0 5px ${color}`
+            };
+        },
+        
         // Close the menu
         closeMenu() {
             fetch('https://ec-blips/closeMenu', {
@@ -72,7 +99,7 @@ createApp({
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    this.blips = data.blips;
+                    this.blips = data.blips || this.blips;
                 }
                 this.activeTab = 'list';
                 
@@ -85,6 +112,12 @@ createApp({
                 };
                 this.customSprite = 1;
                 this.customColor = 0;
+                
+                // Add animation effect
+                this.animateBlipList();
+            })
+            .catch(error => {
+                console.error('Error creating blip:', error);
             });
         },
         
@@ -117,7 +150,13 @@ createApp({
                     }
                     
                     this.cancelEdit();
+                    
+                    // Add animation effect
+                    this.animateBlipList();
                 }
+            })
+            .catch(error => {
+                console.error('Error updating blip:', error);
             });
         },
         
@@ -155,6 +194,9 @@ createApp({
                 
                 this.showDeleteModal = false;
                 this.deleteBlip = null;
+            })
+            .catch(error => {
+                console.error('Error deleting blip:', error);
             });
         },
         
@@ -174,8 +216,33 @@ createApp({
                 } else {
                     // Show notification that no blips were found nearby
                     console.log(data.message);
+                    // Add a visual notification
+                    this.showNotification(data.message || 'No blips found nearby', 'error');
                 }
+            })
+            .catch(error => {
+                console.error('Error finding nearest blip:', error);
             });
+        },
+        
+        // Add animation to blip list items
+        animateBlipList() {
+            setTimeout(() => {
+                const blipItems = document.querySelectorAll('.blip-item');
+                blipItems.forEach((item, index) => {
+                    item.style.animation = 'none';
+                    setTimeout(() => {
+                        item.style.animation = `fadeIn 0.3s ease forwards ${index * 0.05}s`;
+                    }, 10);
+                });
+            }, 100);
+        },
+        
+        // Show notification (visual feedback)
+        showNotification(message, type = 'info') {
+            // This is a placeholder - in a real implementation, you would
+            // create a notification element and show it
+            console.log(`Notification (${type}): ${message}`);
         }
     },
     
@@ -190,6 +257,11 @@ createApp({
                 this.commonColors = data.commonColors || [];
                 this.commonSprites = data.commonSprites || [];
                 this.activeTab = 'list';
+                
+                // Add animation effect
+                this.$nextTick(() => {
+                    this.animateBlipList();
+                });
             } else if (data.action === 'closeMenu') {
                 this.showMenu = false;
             }
