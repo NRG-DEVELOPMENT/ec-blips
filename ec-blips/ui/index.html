@@ -76,29 +76,56 @@
                         
                         <div class="form-group">
                             <label for="blipSprite">Sprite</label>
-                            <div class="select-wrapper">
-                                <select id="blipSprite" v-model="newBlip.sprite">
-                                    <option v-for="sprite in commonSprites" :key="sprite.id" :value="sprite.id">
-                                        {{ sprite.name }} ({{ sprite.id }})
-                                    </option>
-                                </select>
-                                <span class="material-icons">arrow_drop_down</span>
+                            
+                            <!-- Category Filter -->
+                            <div class="category-filter">
+                                <button 
+                                    v-for="(category, index) in spriteCategories" 
+                                    :key="index"
+                                    :class="{ active: selectedCategory === index }"
+                                    @click="selectedCategory = index; spritePage = 1"
+                                >
+                                    {{ category.name }}
+                                </button>
+                                <button 
+                                    :class="{ active: selectedCategory === -1 }"
+                                    @click="selectedCategory = -1; spritePage = 1"
+                                >
+                                    All Sprites
+                                </button>
                             </div>
                             
-                            <!-- Visual sprite selection grid -->
-                            <div class="grid-selection">
+                            <!-- Sprite Search -->
+                            <div class="search-bar sprite-search">
+                                <input type="text" v-model="spriteSearch" placeholder="Search sprites by name or ID...">
+                            </div>
+                            
+                            <!-- Visual sprite selection grid with pagination -->
+                            <div class="grid-selection sprite-grid">
                                 <div 
-                                    v-for="sprite in commonSprites" 
+                                    v-for="sprite in paginatedFilteredSprites" 
                                     :key="sprite.id" 
                                     class="grid-item" 
                                     :class="{ selected: newBlip.sprite === sprite.id }"
                                     @click="newBlip.sprite = sprite.id; customSprite = sprite.id"
                                 >
-                                    <div class="icon">{{ sprite.id }}</div>
+                                    <div class="sprite-icon" :style="getSpriteStyle(sprite.id)">{{ sprite.id }}</div>
                                     <div class="label">{{ sprite.name }}</div>
                                 </div>
                             </div>
                             
+                            <!-- Pagination Controls -->
+                            <div class="pagination-controls" v-if="totalSpritePages > 1">
+                                <button @click="spritePage = Math.max(1, spritePage - 1)" :disabled="spritePage === 1">
+                                    <span class="material-icons">chevron_left</span>
+                                </button>
+                                <span>Page {{ spritePage }} of {{ totalSpritePages }}</span>
+                                <button @click="spritePage = Math.min(totalSpritePages, spritePage + 1)" :disabled="spritePage === totalSpritePages">
+                                    <span class="material-icons">chevron_right</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Custom Sprite Input -->
                             <div class="custom-input">
                                 <label for="customSprite">Custom Sprite ID (0-826):</label>
                                 <input type="number" id="customSprite" v-model="customSprite" min="0" max="826" @change="newBlip.sprite = parseInt(customSprite)">
@@ -144,7 +171,7 @@
                             </div>
                         </div>
                         
-                        <button class="create-btn" @click="createBlip">
+                                                <button class="create-btn" @click="createBlip">
                             <span class="material-icons" style="margin-right: 8px;">add_location</span>
                             Create Blip
                         </button>
@@ -161,27 +188,53 @@
                         
                         <div class="form-group">
                             <label for="editBlipSprite">Sprite</label>
-                            <div class="select-wrapper">
-                                <select id="editBlipSprite" v-model="editingBlip.sprite">
-                                    <option v-for="sprite in commonSprites" :key="sprite.id" :value="sprite.id">
-                                        {{ sprite.name }} ({{ sprite.id }})
-                                    </option>
-                                </select>
-                                <span class="material-icons">arrow_drop_down</span>
+                            
+                            <!-- Category Filter -->
+                            <div class="category-filter">
+                                <button 
+                                    v-for="(category, index) in spriteCategories" 
+                                    :key="index"
+                                    :class="{ active: editSelectedCategory === index }"
+                                    @click="editSelectedCategory = index; editSpritePage = 1"
+                                >
+                                    {{ category.name }}
+                                </button>
+                                <button 
+                                    :class="{ active: editSelectedCategory === -1 }"
+                                    @click="editSelectedCategory = -1; editSpritePage = 1"
+                                >
+                                    All Sprites
+                                </button>
                             </div>
                             
-                            <!-- Visual sprite selection grid -->
-                            <div class="grid-selection">
+                            <!-- Sprite Search -->
+                            <div class="search-bar sprite-search">
+                                <input type="text" v-model="editSpriteSearch" placeholder="Search sprites by name or ID...">
+                            </div>
+                            
+                            <!-- Visual sprite selection grid with pagination -->
+                            <div class="grid-selection sprite-grid">
                                 <div 
-                                    v-for="sprite in commonSprites" 
+                                    v-for="sprite in paginatedFilteredEditSprites" 
                                     :key="sprite.id" 
                                     class="grid-item" 
                                     :class="{ selected: editingBlip.sprite === sprite.id }"
                                     @click="editingBlip.sprite = sprite.id; editCustomSprite = sprite.id"
                                 >
-                                    <div class="icon">{{ sprite.id }}</div>
+                                    <div class="sprite-icon" :style="getSpriteStyle(sprite.id)">{{ sprite.id }}</div>
                                     <div class="label">{{ sprite.name }}</div>
                                 </div>
+                            </div>
+                            
+                            <!-- Pagination Controls -->
+                            <div class="pagination-controls" v-if="totalEditSpritePages > 1">
+                                <button @click="editSpritePage = Math.max(1, editSpritePage - 1)" :disabled="editSpritePage === 1">
+                                    <span class="material-icons">chevron_left</span>
+                                </button>
+                                <span>Page {{ editSpritePage }} of {{ totalEditSpritePages }}</span>
+                                <button @click="editSpritePage = Math.min(totalEditSpritePages, editSpritePage + 1)" :disabled="editSpritePage === totalEditSpritePages">
+                                    <span class="material-icons">chevron_right</span>
+                                </button>
                             </div>
                             
                             <div class="custom-input">
@@ -268,3 +321,4 @@
 </body>
 </html>
 
+                            

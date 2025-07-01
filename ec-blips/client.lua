@@ -216,13 +216,25 @@ function OpenBlipMenu()
     
     -- Send data to NUI
     SetNuiFocus(true, true)
+    
+    -- Determine which sprite list to use
+    local spriteData = Config.CommonSprites
+    local spriteCategories = Config.BlipCategories
+    
+    if Config.UseExtendedSpriteList and Config.ExtendedBlipCategories then
+        spriteCategories = Config.ExtendedBlipCategories
+        spriteData = Config.AllSprites or Config.CommonSprites
+    end
+    
     SendNUIMessage({
         action = "openMenu",
         blips = blipsList,
         commonColors = Config.CommonColors or {},
-        commonSprites = Config.CommonSprites or {}
+        commonSprites = spriteData,
+        spriteCategories = spriteCategories
     })
 end
+
 
 -- Close the NUI interface
 function CloseBlipMenu()

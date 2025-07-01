@@ -26,6 +26,7 @@ createApp({
             blips: [],
             commonColors: [],
             commonSprites: [],
+            spriteCategories: [],
             searchQuery: '',
             
             // New blip form
@@ -38,10 +39,19 @@ createApp({
             customSprite: 1,
             customColor: 0,
             
+            // Sprite selection
+            selectedCategory: 0,
+            spriteSearch: '',
+            spritePage: 1,
+            spritesPerPage: 24,
+            
             // Edit blip form
             editingBlip: null,
             editCustomSprite: 1,
             editCustomColor: 0,
+            editSelectedCategory: 0,
+            editSpriteSearch: '',
+            editSpritePage: 1,
             
             // Delete confirmation
             showDeleteModal: false,
@@ -50,6 +60,7 @@ createApp({
     },
     
     computed: {
+        // Filtered blips for the list view
         filteredBlips() {
             if (!this.searchQuery) return this.blips;
             
@@ -59,6 +70,82 @@ createApp({
                 blip.sprite.toString().includes(query) || 
                 blip.color.toString().includes(query)
             );
+        },
+        
+        // Get all sprites from the selected category
+        categorySprites() {
+            if (this.selectedCategory === -1) {
+                // All sprites
+                let allSprites = [];
+                this.spriteCategories.forEach(category => {
+                    allSprites = allSprites.concat(category.sprites);
+                });
+                return allSprites;
+            } else if (this.spriteCategories[this.selectedCategory]) {
+                // Selected category
+                return this.spriteCategories[this.selectedCategory].sprites || [];
+            }
+            return this.commonSprites || [];
+        },
+        
+        // Filtered sprites based on search
+        filteredSprites() {
+            if (!this.spriteSearch) return this.categorySprites;
+            
+            const query = this.spriteSearch.toLowerCase();
+            return this.categorySprites.filter(sprite => 
+                sprite.name.toLowerCase().includes(query) || 
+                sprite.id.toString().includes(query)
+            );
+        },
+        
+        // Paginated sprites
+        paginatedFilteredSprites() {
+            const start = (this.spritePage - 1) * this.spritesPerPage;
+            return this.filteredSprites.slice(start, start + this.spritesPerPage);
+        },
+        
+        // Total pages
+        totalSpritePages() {
+            return Math.ceil(this.filteredSprites.length / this.spritesPerPage);
+        },
+        
+        // Edit mode - Get all sprites from the selected category
+        editCategorySprites() {
+            if (this.editSelectedCategory === -1) {
+                // All sprites
+                let allSprites = [];
+                this.spriteCategories.forEach(category => {
+                    allSprites = allSprites.concat(category.sprites);
+                });
+                return allSprites;
+            } else if (this.spriteCategories[this.editSelectedCategory]) {
+                // Selected category
+                return this.spriteCategories[this.editSelectedCategory].sprites || [];
+            }
+            return this.commonSprites || [];
+        },
+        
+        // Edit mode - Filtered sprites based on search
+        filteredEditSprites() {
+            if (!this.editSpriteSearch) return this.editCategorySprites;
+            
+            const query = this.editSpriteSearch.toLowerCase();
+            return this.editCategorySprites.filter(sprite => 
+                sprite.name.toLowerCase().includes(query) || 
+                sprite.id.toString().includes(query)
+            );
+        },
+        
+        // Edit mode - Paginated sprites
+        paginatedFilteredEditSprites() {
+            const start = (this.editSpritePage - 1) * this.spritesPerPage;
+            return this.filteredEditSprites.slice(start, start + this.spritesPerPage);
+        },
+        
+        // Edit mode - Total pages
+        totalEditSpritePages() {
+            return Math.ceil(this.filteredEditSprites.length / this.spritesPerPage);
         }
     },
     
@@ -69,6 +156,15 @@ createApp({
             return {
                 backgroundColor: color,
                 boxShadow: `0 0 5px ${color}`
+            };
+        },
+        
+        // Get sprite style for preview
+        getSpriteStyle(spriteId) {
+            return {
+                backgroundColor: `hsl(${(spriteId * 20) % 360}, 70%, 50%)`,
+                color: '#fff',
+                fontWeight: 'bold'
             };
         },
         
@@ -126,6 +222,9 @@ createApp({
             this.editingBlip = { ...blip };
             this.editCustomSprite = blip.sprite;
             this.editCustomColor = blip.color;
+            this.editSelectedCategory = 0; // Reset to first category
+            this.editSpriteSearch = '';
+            this.editSpritePage = 1;
             this.activeTab = 'edit';
         },
         
@@ -256,6 +355,7 @@ createApp({
                 this.blips = data.blips || [];
                 this.commonColors = data.commonColors || [];
                 this.commonSprites = data.commonSprites || [];
+                this.spriteCategories = data.spriteCategories || [];
                 this.activeTab = 'list';
                 
                 // Add animation effect

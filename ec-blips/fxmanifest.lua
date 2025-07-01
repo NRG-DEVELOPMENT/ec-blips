@@ -3,10 +3,11 @@ game 'gta5'
 
 author 'NRG Development'
 description 'EC-Blips - In-game blip management system with clean UI'
-version '1.0.1'
+version '1.0.2'
 
 shared_scripts {
     'config.lua',
+    'blip_sprites.lua',
 }
 
 client_scripts {
