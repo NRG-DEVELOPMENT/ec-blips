@@ -43,7 +43,8 @@ local function LoadBlips(blipsData)
                         SetBlipSprite(blipHandle, tonumber(blipData.sprite) or 1)
                         SetBlipColour(blipHandle, tonumber(blipData.color) or 0)
                         SetBlipScale(blipHandle, tonumber(blipData.scale) or 0.8)
-                        SetBlipAsShortRange(blipHandle, blipData.shortRange == 1)
+                        -- Convert to boolean: either 1 or true should be treated as true
+                        SetBlipAsShortRange(blipHandle, blipData.shortRange == 1 or blipData.shortRange == true)
                         SetBlipDisplay(blipHandle, tonumber(blipData.display) or 4)
                         
                         BeginTextCommandSetBlipName("STRING")
@@ -59,7 +60,7 @@ local function LoadBlips(blipsData)
                                 sprite = tonumber(blipData.sprite) or 1,
                                 color = tonumber(blipData.color) or 0,
                                 scale = tonumber(blipData.scale) or 0.8,
-                                shortRange = blipData.shortRange == 1,
+                                shortRange = blipData.shortRange == 1 or blipData.shortRange == true,
                                 display = tonumber(blipData.display) or 4,
                                 coords = coords
                             }
@@ -97,6 +98,7 @@ local function CreateBlip(data)
     QBCore.Functions.Notify('Blip created: ' .. blipData.name, 'success')
 end
 
+
 -- Update an existing blip
 local function UpdateBlip(id, data)
     if not id or not data then return false end
@@ -124,6 +126,7 @@ local function UpdateBlip(id, data)
     end
     
     if data.shortRange ~= nil then 
+        -- Convert to boolean for the native function
         SetBlipAsShortRange(blipHandle, data.shortRange)
     end
     
@@ -261,7 +264,8 @@ RegisterNUICallback('createBlip', function(data, cb)
         name = data.name,
         sprite = tonumber(data.sprite),
         color = tonumber(data.color),
-        scale = tonumber(data.scale)
+        scale = tonumber(data.scale),
+        shortRange = data.shortRange -- This should be a boolean
     }
     
     CreateBlip(newBlip)
@@ -279,12 +283,14 @@ RegisterNUICallback('updateBlip', function(data, cb)
         name = data.name,
         sprite = tonumber(data.sprite),
         color = tonumber(data.color),
-        scale = tonumber(data.scale)
+        scale = tonumber(data.scale),
+        shortRange = data.shortRange -- This should be a boolean
     }
     
     local success = UpdateBlip(id, updatedData)
     if cb then cb({success = success}) end
 end)
+
 
 RegisterNUICallback('deleteBlip', function(data, cb)
     if not data or not data.id then

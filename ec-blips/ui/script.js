@@ -34,7 +34,8 @@ createApp({
                 name: 'New Blip',
                 sprite: 1,
                 color: 0,
-                scale: 0.8
+                scale: 0.8,
+                shortRange: true  // Default to true (only visible when nearby)
             },
             customSprite: 1,
             customColor: 0,
@@ -219,7 +220,10 @@ createApp({
         
         // Edit a blip
         editBlip(blip) {
-            this.editingBlip = { ...blip };
+            this.editingBlip = { 
+                ...blip,
+                shortRange: blip.shortRange === 1 || blip.shortRange === true
+            };
             this.editCustomSprite = blip.sprite;
             this.editCustomColor = blip.color;
             this.editSelectedCategory = 0; // Reset to first category
@@ -227,7 +231,7 @@ createApp({
             this.editSpritePage = 1;
             this.activeTab = 'edit';
         },
-        
+            
         // Save edited blip
         saveBlip() {
             if (!this.editingBlip) return;
@@ -346,13 +350,19 @@ createApp({
     },
     
     mounted() {
-        // Listen for NUI messages
+        // In the mounted function where we process the data from the server
         window.addEventListener('message', (event) => {
             const data = event.data;
             
             if (data.action === 'openMenu') {
                 this.showMenu = true;
-                this.blips = data.blips || [];
+                
+                // Make sure shortRange is properly converted from 0/1 to boolean
+                this.blips = (data.blips || []).map(blip => ({
+                    ...blip,
+                    shortRange: blip.shortRange === 1 || blip.shortRange === true
+                }));
+                
                 this.commonColors = data.commonColors || [];
                 this.commonSprites = data.commonSprites || [];
                 this.spriteCategories = data.spriteCategories || [];
@@ -366,6 +376,7 @@ createApp({
                 this.showMenu = false;
             }
         });
+
         
         // Close on escape key
         document.addEventListener('keydown', (event) => {

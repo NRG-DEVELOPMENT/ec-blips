@@ -50,6 +50,7 @@
                                     <span>Sprite: {{ blip.sprite }}</span>
                                     <span>Color: {{ blip.color }}</span>
                                     <span>Scale: {{ blip.scale }}</span>
+                                    <span>{{ blip.shortRange ? 'Short Range' : 'Long Range' }}</span>
                                 </div>
                             </div>
                             <div class="blip-actions">
@@ -94,7 +95,18 @@
                                     All Sprites
                                 </button>
                             </div>
-                            
+                            <div class="form-group">
+                            <label for="blipShortRange">Short Range</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="blipShortRange" v-model="newBlip.shortRange">
+                                <label for="blipShortRange" class="toggle-label">
+                                    <span class="toggle-inner"></span>
+                                    <span class="toggle-switch"></span>
+                                </label>
+                                <span class="toggle-text">{{ newBlip.shortRange ? 'Only visible nearby' : 'Visible from anywhere' }}</span>
+                            </div>
+                                <div class="help-text">When enabled, the blip will only be visible when nearby. When disabled, it will be visible from anywhere on the map.</div>
+                            </div>
                             <!-- Sprite Search -->
                             <div class="search-bar sprite-search">
                                 <input type="text" v-model="spriteSearch" placeholder="Search sprites by name or ID...">
@@ -207,6 +219,18 @@
                                 </button>
                             </div>
                             
+                            <div class="form-group">
+                                <label for="editBlipShortRange">Short Range</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="editBlipShortRange" v-model="editingBlip.shortRange">
+                                    <label for="editBlipShortRange" class="toggle-label">
+                                        <span class="toggle-inner"></span>
+                                        <span class="toggle-switch"></span>
+                                    </label>
+                                    <span class="toggle-text">{{ editingBlip.shortRange ? 'Yes' : 'No' }}</span>
+                                </div>
+                                <div class="help-text">When enabled, the blip will only be visible when nearby.</div>
+                            </div>
                             <!-- Sprite Search -->
                             <div class="search-bar sprite-search">
                                 <input type="text" v-model="editSpriteSearch" placeholder="Search sprites by name or ID...">

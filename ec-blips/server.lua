@@ -194,6 +194,7 @@ AddEventHandler('ec-blips:server:createBlip', function(blipData)
     end
     
     local coords = json.encode(blipData.coords)
+    -- Convert boolean to 0/1 for database
     local shortRange = blipData.shortRange and 1 or 0
     
     local id = MySQL.insert.await('INSERT INTO `'..Config.DatabaseTable..'` (name, sprite, color, scale, shortRange, display, coords) VALUES (?, ?, ?, ?, ?, ?, ?)', {
@@ -211,6 +212,8 @@ AddEventHandler('ec-blips:server:createBlip', function(blipData)
         SyncBlipsToAllPlayers()
     end
 end)
+
+
 
 -- Update an existing blip
 RegisterServerEvent('ec-blips:server:updateBlip')
@@ -270,6 +273,7 @@ AddEventHandler('ec-blips:server:updateBlip', function(id, blipData)
         end)
     end
 end)
+
 
 -- Delete a blip
 RegisterServerEvent('ec-blips:server:deleteBlip')
