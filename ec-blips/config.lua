@@ -10,8 +10,8 @@ Config.Whitelist = {
     -- FiveM identifiers (license:, steam:, discord:, etc.)
     ["license:1234567890abcdef1234567890abcdef12345678"] = true,
     ["steam:1100001012345678"] = true,
-    ["discord:783727897961037867"] = true,
-    ['discord:1008257467530084365'] = true
+    ["discord:23432432432432432"] = true,
+
     
     -- You can add more identifiers here
 }
