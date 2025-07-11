@@ -25,8 +25,7 @@ files {
     'ui/index.html',
     'ui/style.css',
     'ui/script.js',
-    'ui/assets/*.png',
-    'ui/assets/icons/*.svg'
+
 }
 
 lua54 'yes'
