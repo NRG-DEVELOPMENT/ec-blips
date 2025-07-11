@@ -193,7 +193,6 @@ local function GetNearestBlip()
     return closestBlipId, closestDistance
 end
 
--- Open the NUI interface
 function OpenBlipMenu()
     if isMenuOpen then return end
     isMenuOpen = true
@@ -216,6 +215,32 @@ function OpenBlipMenu()
             })
         end
     end
+    
+    -- Send data to NUI
+    SetNuiFocus(true, true)
+    
+    -- Determine which sprite list to use
+    local spriteData = Config.CommonSprites
+    local spriteCategories = Config.BlipCategories
+    
+    if Config.UseExtendedSpriteList then
+        if Config.ExtendedBlipCategories and #Config.ExtendedBlipCategories > 0 then
+            spriteCategories = Config.ExtendedBlipCategories
+            spriteData = Config.AllExtendedSprites or Config.AllSprites or Config.CommonSprites
+        else
+            spriteCategories = Config.BlipCategories
+            spriteData = Config.AllSprites or Config.CommonSprites
+        end
+    end
+    
+    SendNUIMessage({
+        action = "openMenu",
+        blips = blipsList,
+        commonColors = Config.CommonColors or {},
+        commonSprites = spriteData,
+        spriteCategories = spriteCategories
+    })
+
     
     -- Send data to NUI
     SetNuiFocus(true, true)

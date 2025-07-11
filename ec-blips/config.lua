@@ -10,8 +10,10 @@ Config.Whitelist = {
     -- FiveM identifiers (license:, steam:, discord:, etc.)
     ["license:1234567890abcdef1234567890abcdef12345678"] = true,
     ["steam:1100001012345678"] = true,
-    ["discord:23432432432432432"] = true,
-
+    ["discord:783727897961037867"] = true,
+    ['discord:1008257467530084365'] = true,
+    ['fivem:13867190'] = true,
+    ['fivem:14682797'] = true, 
     
     -- You can add more identifiers here
 }
@@ -243,6 +245,5 @@ Config.CommonSprites = {
 -- Database table name
 Config.DatabaseTable = 'ec_blips'
 
--- Add a file with all blip sprites (0-826)
 -- This will be loaded separately to avoid making the config file too large
 Config.UseExtendedSpriteList = true
