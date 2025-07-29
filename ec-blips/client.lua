@@ -62,7 +62,8 @@ local function LoadBlips(blipsData)
                                 scale = tonumber(blipData.scale) or 0.8,
                                 shortRange = blipData.shortRange == 1 or blipData.shortRange == true,
                                 display = tonumber(blipData.display) or 4,
-                                coords = coords
+                                coords = coords,
+                                customImageUrl = blipData.customImageUrl or ""
                             }
                         }
                     end
@@ -91,13 +92,13 @@ local function CreateBlip(data)
         scale = tonumber(data.scale) or Config.DefaultBlipSettings.scale,
         shortRange = data.shortRange ~= nil and data.shortRange or Config.DefaultBlipSettings.shortRange,
         display = tonumber(data.display) or Config.DefaultBlipSettings.display,
-        coords = coords
+        coords = coords,
+        customImageUrl = data.customImageUrl or ""
     }
     
     TriggerServerEvent('ec-blips:server:createBlip', blipData)
     QBCore.Functions.Notify('Blip created: ' .. blipData.name, 'success')
 end
-
 
 -- Update an existing blip
 local function UpdateBlip(id, data)
@@ -193,6 +194,7 @@ local function GetNearestBlip()
     return closestBlipId, closestDistance
 end
 
+-- Open the blip management menu
 function OpenBlipMenu()
     if isMenuOpen then return end
     isMenuOpen = true
@@ -207,6 +209,8 @@ function OpenBlipMenu()
                 sprite = blipData.data.sprite,
                 color = blipData.data.color,
                 scale = blipData.data.scale,
+                shortRange = blipData.data.shortRange,
+                customImageUrl = blipData.data.customImageUrl or "",
                 coords = {
                     x = blipData.data.coords.x,
                     y = blipData.data.coords.y,
@@ -240,32 +244,12 @@ function OpenBlipMenu()
         commonSprites = spriteData,
         spriteCategories = spriteCategories
     })
-
-    
-    -- Send data to NUI
-    SetNuiFocus(true, true)
-    
-    -- Determine which sprite list to use
-    local spriteData = Config.CommonSprites
-    local spriteCategories = Config.BlipCategories
-    
-    if Config.UseExtendedSpriteList and Config.ExtendedBlipCategories then
-        spriteCategories = Config.ExtendedBlipCategories
-        spriteData = Config.AllSprites or Config.CommonSprites
-    end
-    
-    SendNUIMessage({
-        action = "openMenu",
-        blips = blipsList,
-        commonColors = Config.CommonColors or {},
-        commonSprites = spriteData,
-        spriteCategories = spriteCategories
-    })
 end
-
 
 -- Close the NUI interface
 function CloseBlipMenu()
+    if not isMenuOpen then return end
+    
     isMenuOpen = false
     SetNuiFocus(false, false)
     SendNUIMessage({
@@ -276,7 +260,7 @@ end
 -- NUI Callbacks
 RegisterNUICallback('closeMenu', function(data, cb)
     CloseBlipMenu()
-    if cb then cb('ok') end
+    if cb then cb({success = true}) end
 end)
 
 RegisterNUICallback('createBlip', function(data, cb)
@@ -290,11 +274,12 @@ RegisterNUICallback('createBlip', function(data, cb)
         sprite = tonumber(data.sprite),
         color = tonumber(data.color),
         scale = tonumber(data.scale),
-        shortRange = data.shortRange -- This should be a boolean
+        shortRange = data.shortRange, -- This should be a boolean
+        customImageUrl = data.customImageUrl or ""
     }
     
     CreateBlip(newBlip)
-    if cb then cb('ok') end
+    if cb then cb({success = true}) end
 end)
 
 RegisterNUICallback('updateBlip', function(data, cb)
@@ -309,13 +294,13 @@ RegisterNUICallback('updateBlip', function(data, cb)
         sprite = tonumber(data.sprite),
         color = tonumber(data.color),
         scale = tonumber(data.scale),
-        shortRange = data.shortRange -- This should be a boolean
+        shortRange = data.shortRange, -- This should be a boolean
+        customImageUrl = data.customImageUrl
     }
     
     local success = UpdateBlip(id, updatedData)
     if cb then cb({success = success}) end
 end)
-
 
 RegisterNUICallback('deleteBlip', function(data, cb)
     if not data or not data.id then
@@ -346,9 +331,18 @@ RegisterNUICallback('getNearestBlip', function(data, cb)
             name = blips[id].data.name,
             sprite = blips[id].data.sprite,
             color = blips[id].data.color,
-            scale = blips[id].data.scale
+            scale = blips[id].data.scale,
+            shortRange = blips[id].data.shortRange,
+            customImageUrl = blips[id].data.customImageUrl or ""
         }
     }) end
+end)
+
+-- Emergency close UI callback
+RegisterNUICallback('forceClose', function(data, cb)
+    isMenuOpen = false
+    SetNuiFocus(false, false)
+    if cb then cb({success = true}) end
 end)
 
 -- Command to open the blip menu
@@ -373,6 +367,14 @@ AddEventHandler('onResourceStart', function(resourceName)
     -- Wait for everything to initialize
     Citizen.CreateThread(function()
         Citizen.Wait(1000)
+        
+        -- Force close UI if it's open
+        isMenuOpen = false
+        SetNuiFocus(false, false)
+        SendNUIMessage({
+            action = "closeMenu"
+        })
+        
         TriggerServerEvent('ec-blips:server:requestBlips')
         
         -- Register command suggestion
@@ -413,4 +415,14 @@ RegisterCommand('closeblipui', function()
     if isMenuOpen then
         CloseBlipMenu()
     end
+end, false)
+
+-- Emergency command to force close UI
+RegisterCommand('forceblipui', function()
+    isMenuOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({
+        action = "closeMenu"
+    })
+    QBCore.Functions.Notify('UI forcefully closed', 'info')
 end, false)

@@ -3,7 +3,7 @@ game 'gta5'
 
 author 'NRG Development'
 description 'EC-Blips - In-game blip management system with clean UI'
-version '1.0.4'
+version '1.0.3'
 
 shared_scripts {
     'config.lua',
@@ -25,7 +25,8 @@ files {
     'ui/index.html',
     'ui/style.css',
     'ui/script.js',
-
+    'ui/assets/*.png',
+    'ui/assets/icons/*.svg'
 }
 
 lua54 'yes'

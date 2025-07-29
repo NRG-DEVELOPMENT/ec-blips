@@ -11,9 +11,25 @@ local function InitializeDatabase()
             `scale` FLOAT NOT NULL,
             `shortRange` TINYINT(1) NOT NULL DEFAULT 1,
             `display` INT NOT NULL DEFAULT 4,
-            `coords` LONGTEXT NOT NULL
+            `coords` LONGTEXT NOT NULL,
+            `customImageUrl` VARCHAR(255) DEFAULT NULL
         )
     ]])
+    
+    -- Check if customImageUrl column exists, add it if not
+    MySQL.query([[
+        SELECT COUNT(*) AS count FROM information_schema.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = ']]..Config.DatabaseTable..[[' 
+        AND COLUMN_NAME = 'customImageUrl'
+    ]], {}, function(result)
+        if result[1].count == 0 then
+            MySQL.query([[
+                ALTER TABLE `]]..Config.DatabaseTable..[[`
+                ADD COLUMN `customImageUrl` VARCHAR(255) DEFAULT NULL
+            ]])
+        end
+    end)
 end
 
 -- Load all blips from database
@@ -183,7 +199,6 @@ AddEventHandler('ec-blips:server:checkPermission', function()
     end
 end)
 
--- Create a new blip
 RegisterServerEvent('ec-blips:server:createBlip')
 AddEventHandler('ec-blips:server:createBlip', function(blipData)
     local src = source
@@ -197,14 +212,15 @@ AddEventHandler('ec-blips:server:createBlip', function(blipData)
     -- Convert boolean to 0/1 for database
     local shortRange = blipData.shortRange and 1 or 0
     
-    local id = MySQL.insert.await('INSERT INTO `'..Config.DatabaseTable..'` (name, sprite, color, scale, shortRange, display, coords) VALUES (?, ?, ?, ?, ?, ?, ?)', {
+    local id = MySQL.insert.await('INSERT INTO `'..Config.DatabaseTable..'` (name, sprite, color, scale, shortRange, display, coords, customImageUrl) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', {
         blipData.name,
         blipData.sprite,
         blipData.color,
         blipData.scale,
         shortRange,
         blipData.display,
-        coords
+        coords,
+        blipData.customImageUrl or nil -- Add this line
     })
     
     if id then
@@ -215,7 +231,6 @@ end)
 
 
 
--- Update an existing blip
 RegisterServerEvent('ec-blips:server:updateBlip')
 AddEventHandler('ec-blips:server:updateBlip', function(id, blipData)
     local src = source
@@ -229,6 +244,7 @@ AddEventHandler('ec-blips:server:updateBlip', function(id, blipData)
     local params = {}
     local updates = {}
     
+    -- Add existing fields
     if blipData.name then
         table.insert(updates, 'name = ?')
         table.insert(params, blipData.name)
@@ -264,6 +280,12 @@ AddEventHandler('ec-blips:server:updateBlip', function(id, blipData)
         table.insert(params, json.encode(blipData.coords))
     end
     
+    -- Add customImageUrl field
+    if blipData.customImageUrl ~= nil then
+        table.insert(updates, 'customImageUrl = ?')
+        table.insert(params, blipData.customImageUrl == "" and nil or blipData.customImageUrl)
+    end
+    
     if #updates > 0 then
         query = query .. table.concat(updates, ', ') .. ' WHERE id = ?'
         table.insert(params, id)
@@ -273,7 +295,6 @@ AddEventHandler('ec-blips:server:updateBlip', function(id, blipData)
         end)
     end
 end)
-
 
 -- Delete a blip
 RegisterServerEvent('ec-blips:server:deleteBlip')
