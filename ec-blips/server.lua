@@ -1,4 +1,16 @@
-local QBCore = exports['qb-core']:GetCoreObject()
+-- Framework initialization
+local QBCore = nil
+local ESX = nil
+
+-- Initialize the appropriate framework
+local function InitializeFramework()
+    if Config.Framework == 'qb' then
+        QBCore = exports['qb-core']:GetCoreObject()
+    elseif Config.Framework == 'esx' then
+        ESX = nil
+        TriggerEvent(Config.ESXEvent, function(obj) ESX = obj end)
+    end
+end
 
 -- Initialize database
 local function InitializeDatabase()
@@ -57,10 +69,24 @@ end
 local function HasPermission(src)
     if not Config.UsePermissionSystem then return true end
     
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return false end
+    if Config.Framework == 'qb' and QBCore then
+        local Player = QBCore.Functions.GetPlayer(src)
+        if not Player then return false end
+        
+        return QBCore.Functions.HasPermission(src, Config.RequiredPermission)
+    elseif Config.Framework == 'esx' and ESX then
+        local xPlayer = ESX.GetPlayerFromId(src)
+        if not xPlayer then return false end
+        
+        local playerGroup = xPlayer.getGroup()
+        for _, adminGroup in ipairs(Config.ESXAdminGroups) do
+            if playerGroup == adminGroup then
+                return true
+            end
+        end
+    end
     
-    return QBCore.Functions.HasPermission(src, Config.RequiredPermission)
+    return false
 end
 
 -- Check if player can use blip commands
@@ -88,16 +114,24 @@ RegisterCommand("addblipwhitelist", function(source, args, rawCommand)
     local src = source
     
     -- Only console or players with admin permission can add to whitelist
-    if src > 0 and not QBCore.Functions.HasPermission(src, "admin") then
+    if src > 0 and not HasPermission(src) then
         if src > 0 then
-            TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+            if Config.Framework == 'qb' and QBCore then
+                TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+            elseif Config.Framework == 'esx' and ESX then
+                TriggerClientEvent('esx:showNotification', src, 'You do not have permission to use this command')
+            end
         end
         return
     end
     
     if #args < 1 then
         if src > 0 then
-            TriggerClientEvent('QBCore:Notify', src, 'Usage: /addblipwhitelist [identifier]', 'error')
+            if Config.Framework == 'qb' and QBCore then
+                TriggerClientEvent('QBCore:Notify', src, 'Usage: /addblipwhitelist [identifier]', 'error')
+            elseif Config.Framework == 'esx' and ESX then
+                TriggerClientEvent('esx:showNotification', src, 'Usage: /addblipwhitelist [identifier]')
+            end
         else
             print('Usage: addblipwhitelist [identifier]')
         end
@@ -113,7 +147,11 @@ RegisterCommand("addblipwhitelist", function(source, args, rawCommand)
     SaveResourceFile(GetCurrentResourceName(), "whitelist.json", json.encode(Config.Whitelist), -1)
     
     if src > 0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Added ' .. identifier .. ' to blip whitelist', 'success')
+        if Config.Framework == 'qb' and QBCore then
+            TriggerClientEvent('QBCore:Notify', src, 'Added ' .. identifier .. ' to blip whitelist', 'success')
+        elseif Config.Framework == 'esx' and ESX then
+            TriggerClientEvent('esx:showNotification', src, 'Added ' .. identifier .. ' to blip whitelist')
+        end
     else
         print('Added ' .. identifier .. ' to blip whitelist')
     end
@@ -124,16 +162,24 @@ RegisterCommand("removeblipwhitelist", function(source, args, rawCommand)
     local src = source
     
     -- Only console or players with admin permission can remove from whitelist
-    if src > 0 and not QBCore.Functions.HasPermission(src, "admin") then
+    if src > 0 and not HasPermission(src) then
         if src > 0 then
-            TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+            if Config.Framework == 'qb' and QBCore then
+                TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+            elseif Config.Framework == 'esx' and ESX then
+                TriggerClientEvent('esx:showNotification', src, 'You do not have permission to use this command')
+            end
         end
         return
     end
     
     if #args < 1 then
         if src > 0 then
-            TriggerClientEvent('QBCore:Notify', src, 'Usage: /removeblipwhitelist [identifier]', 'error')
+            if Config.Framework == 'qb' and QBCore then
+                TriggerClientEvent('QBCore:Notify', src, 'Usage: /removeblipwhitelist [identifier]', 'error')
+            elseif Config.Framework == 'esx' and ESX then
+                TriggerClientEvent('esx:showNotification', src, 'Usage: /removeblipwhitelist [identifier]')
+            end
         else
             print('Usage: removeblipwhitelist [identifier]')
         end
@@ -149,7 +195,11 @@ RegisterCommand("removeblipwhitelist", function(source, args, rawCommand)
     SaveResourceFile(GetCurrentResourceName(), "whitelist.json", json.encode(Config.Whitelist), -1)
     
     if src > 0 then
-        TriggerClientEvent('QBCore:Notify', src, 'Removed ' .. identifier .. ' from blip whitelist', 'success')
+        if Config.Framework == 'qb' and QBCore then
+            TriggerClientEvent('QBCore:Notify', src, 'Removed ' .. identifier .. ' from blip whitelist', 'success')
+        elseif Config.Framework == 'esx' and ESX then
+            TriggerClientEvent('esx:showNotification', src, 'Removed ' .. identifier .. ' from blip whitelist')
+        end
     else
         print('Removed ' .. identifier .. ' from blip whitelist')
     end
@@ -160,8 +210,12 @@ RegisterCommand("listidentifiers", function(source, args, rawCommand)
     local src = source
     
     -- Only console or players with admin permission can list identifiers
-    if src > 0 and not QBCore.Functions.HasPermission(src, "admin") then
-        TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+    if src > 0 and not HasPermission(src) then
+        if Config.Framework == 'qb' and QBCore then
+            TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+        elseif Config.Framework == 'esx' and ESX then
+            TriggerClientEvent('esx:showNotification', src, 'You do not have permission to use this command')
+        end
         return
     end
     
@@ -171,7 +225,11 @@ RegisterCommand("listidentifiers", function(source, args, rawCommand)
         local identifiers = GetPlayerIdentifiers(targetId)
         
         if src > 0 then
-            TriggerClientEvent('QBCore:Notify', src, 'Identifiers for ' .. GetPlayerName(targetId) .. ' sent to console', 'info')
+            if Config.Framework == 'qb' and QBCore then
+                TriggerClientEvent('QBCore:Notify', src, 'Identifiers for ' .. GetPlayerName(targetId) .. ' sent to console', 'info')
+            elseif Config.Framework == 'esx' and ESX then
+                TriggerClientEvent('esx:showNotification', src, 'Identifiers for ' .. GetPlayerName(targetId) .. ' sent to console')
+            end
         end
         
         print('Identifiers for ' .. GetPlayerName(targetId) .. ':')
@@ -180,7 +238,11 @@ RegisterCommand("listidentifiers", function(source, args, rawCommand)
         end
     else
         if src > 0 then
-            TriggerClientEvent('QBCore:Notify', src, 'Player not found', 'error')
+            if Config.Framework == 'qb' and QBCore then
+                TriggerClientEvent('QBCore:Notify', src, 'Player not found', 'error')
+            elseif Config.Framework == 'esx' and ESX then
+                TriggerClientEvent('esx:showNotification', src, 'Player not found')
+            end
         else
             print('Player not found')
         end
@@ -195,7 +257,11 @@ AddEventHandler('ec-blips:server:checkPermission', function()
     if CanUseBlipCommands(src) then
         TriggerClientEvent('ec-blips:client:openMenuAfterPermCheck', src)
     else
-        TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+        if Config.Framework == 'qb' and QBCore then
+            TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to use this command', 'error')
+        elseif Config.Framework == 'esx' and ESX then
+            TriggerClientEvent('esx:showNotification', src, 'You do not have permission to use this command')
+        end
     end
 end)
 
@@ -204,7 +270,11 @@ AddEventHandler('ec-blips:server:createBlip', function(blipData)
     local src = source
     
     if not CanUseBlipCommands(src) then
-        TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to create blips', 'error')
+        if Config.Framework == 'qb' and QBCore then
+            TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to create blips', 'error')
+        elseif Config.Framework == 'esx' and ESX then
+            TriggerClientEvent('esx:showNotification', src, 'You do not have permission to create blips')
+        end
         return
     end
     
@@ -220,7 +290,7 @@ AddEventHandler('ec-blips:server:createBlip', function(blipData)
         shortRange,
         blipData.display,
         coords,
-        blipData.customImageUrl or nil -- Add this line
+        blipData.customImageUrl or nil
     })
     
     if id then
@@ -229,14 +299,16 @@ AddEventHandler('ec-blips:server:createBlip', function(blipData)
     end
 end)
 
-
-
 RegisterServerEvent('ec-blips:server:updateBlip')
 AddEventHandler('ec-blips:server:updateBlip', function(id, blipData)
     local src = source
     
     if not CanUseBlipCommands(src) then
-        TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to update blips', 'error')
+        if Config.Framework == 'qb' and QBCore then
+            TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to update blips', 'error')
+        elseif Config.Framework == 'esx' and ESX then
+            TriggerClientEvent('esx:showNotification', src, 'You do not have permission to update blips')
+        end
         return
     end
     
@@ -302,7 +374,11 @@ AddEventHandler('ec-blips:server:deleteBlip', function(id)
     local src = source
     
     if not CanUseBlipCommands(src) then
-        TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to delete blips', 'error')
+        if Config.Framework == 'qb' and QBCore then
+            TriggerClientEvent('QBCore:Notify', src, 'You do not have permission to delete blips', 'error')
+        elseif Config.Framework == 'esx' and ESX then
+            TriggerClientEvent('esx:showNotification', src, 'You do not have permission to delete blips')
+        end
         return
     end
     
@@ -339,6 +415,11 @@ end
 -- Initialize
 AddEventHandler('onResourceStart', function(resourceName)
     if (GetCurrentResourceName() ~= resourceName) then return end
+    
+    -- Initialize framework
+    InitializeFramework()
+    
+    -- Initialize database and load whitelist
     InitializeDatabase()
     LoadWhitelist()
 end)

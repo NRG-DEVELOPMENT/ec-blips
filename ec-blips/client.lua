@@ -1,4 +1,36 @@
-local QBCore = exports['qb-core']:GetCoreObject()
+-- Framework initialization
+local QBCore = nil
+local ESX = nil
+
+-- Initialize the appropriate framework
+local function InitializeFramework()
+    if Config.Framework == 'qb' then
+        QBCore = exports['qb-core']:GetCoreObject()
+    elseif Config.Framework == 'esx' then
+        ESX = nil
+        TriggerEvent(Config.ESXEvent, function(obj) ESX = obj end)
+        while ESX == nil do Wait(0) end
+    end
+end
+
+-- Framework-agnostic notification function
+local function ShowNotification(message, type)
+    if Config.Framework == 'qb' and QBCore then
+        QBCore.Functions.Notify(message, type)
+    elseif Config.Framework == 'esx' and ESX then
+        if type == 'error' then
+            ESX.ShowNotification(message, false, true, 140)
+        else
+            ESX.ShowNotification(message)
+        end
+    else
+        -- Fallback notification
+        SetNotificationTextEntry('STRING')
+        AddTextComponentString(message)
+        DrawNotification(false, false)
+    end
+end
+
 local blips = {}
 local isMenuOpen = false
 
@@ -81,7 +113,7 @@ local function CreateBlip(data)
     local coords = GetEntityCoords(playerPed)
     
     if not coords then
-        QBCore.Functions.Notify('Failed to get player position', 'error')
+        ShowNotification('Failed to get player position', 'error')
         return
     end
     
@@ -97,7 +129,7 @@ local function CreateBlip(data)
     }
     
     TriggerServerEvent('ec-blips:server:createBlip', blipData)
-    QBCore.Functions.Notify('Blip created: ' .. blipData.name, 'success')
+    ShowNotification('Blip created: ' .. blipData.name, 'success')
 end
 
 -- Update an existing blip
@@ -144,7 +176,7 @@ local function UpdateBlip(id, data)
     
     -- Update server data
     TriggerServerEvent('ec-blips:server:updateBlip', id, data)
-    QBCore.Functions.Notify('Blip updated: ' .. (data.name or blips[id].data.name), 'success')
+    ShowNotification('Blip updated: ' .. (data.name or blips[id].data.name), 'success')
     return true
 end
 
@@ -162,7 +194,7 @@ local function DeleteBlip(id)
     
     TriggerServerEvent('ec-blips:server:deleteBlip', id)
     blips[id] = nil
-    QBCore.Functions.Notify('Blip deleted', 'success')
+    ShowNotification('Blip deleted', 'success')
     return true
 end
 
@@ -172,7 +204,7 @@ local function GetNearestBlip()
     local playerCoords = GetEntityCoords(playerPed)
     
     if not playerCoords then
-        QBCore.Functions.Notify('Failed to get player position', 'error')
+        ShowNotification('Failed to get player position', 'error')
         return nil, 1000.0
     end
     
@@ -368,6 +400,9 @@ AddEventHandler('onResourceStart', function(resourceName)
     Citizen.CreateThread(function()
         Citizen.Wait(1000)
         
+        -- Initialize framework
+        InitializeFramework()
+        
         -- Force close UI if it's open
         isMenuOpen = false
         SetNuiFocus(false, false)
@@ -402,12 +437,21 @@ AddEventHandler('onResourceStop', function(resourceName)
 end)
 
 -- Handle player loading
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    Citizen.CreateThread(function()
-        Citizen.Wait(1000) -- Wait a bit to ensure everything is loaded
-        TriggerServerEvent('ec-blips:server:requestBlips')
+if Config.Framework == 'qb' then
+    RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+        Citizen.CreateThread(function()
+            Citizen.Wait(1000) -- Wait a bit to ensure everything is loaded
+            TriggerServerEvent('ec-blips:server:requestBlips')
+        end)
     end)
-end)
+elseif Config.Framework == 'esx' then
+    RegisterNetEvent('esx:playerLoaded', function()
+        Citizen.CreateThread(function()
+            Citizen.Wait(1000) -- Wait a bit to ensure everything is loaded
+            TriggerServerEvent('ec-blips:server:requestBlips')
+        end)
+    end)
+end
 
 -- Key binding to close UI if it gets stuck
 RegisterKeyMapping('closeblipui', 'Close Blip UI', 'keyboard', 'ESCAPE')
@@ -424,5 +468,5 @@ RegisterCommand('forceblipui', function()
     SendNUIMessage({
         action = "closeMenu"
     })
-    QBCore.Functions.Notify('UI forcefully closed', 'info')
+    ShowNotification('UI forcefully closed', 'info')
 end, false)

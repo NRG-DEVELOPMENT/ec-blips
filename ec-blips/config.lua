@@ -1,8 +1,14 @@
+
 Config = {}
+
+-- Framework configuration
+Config.Framework = 'qb' -- Options: 'qb' for QBCore, 'esx' for ESX
+Config.ESXEvent = 'esx:getSharedObject' -- ESX shared object event name
 
 -- Permission system
 Config.UsePermissionSystem = false -- Set to false to use only whitelist
-Config.RequiredPermission = 'admin' -- QBCore permission level required if using permission system
+Config.RequiredPermission = 'admin' -- Permission level required if using permission system
+Config.ESXAdminGroups = {'admin', 'superadmin'} -- ESX admin groups that have permission
 
 -- Whitelist system
 Config.UseWhitelist = true -- Set to false to use only permission system
@@ -48,6 +54,12 @@ Config.CommonColors = {
     {id = 76, name = "Dark Purple"},
     {id = 84, name = "Gold"}
 }
+
+-- Database table name
+Config.DatabaseTable = 'ec_blips'
+
+-- This will be loaded separately to avoid making the config file too large
+Config.UseExtendedSpriteList = true
 
 -- Categorized blip sprites
 Config.BlipCategories = {
